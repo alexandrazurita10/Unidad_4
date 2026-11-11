@@ -1,0 +1,413 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Bases de datos distribuidas</title>
+<style>
+:root{--bg:#ffffff;--pn:#f3f6fa;--tx:#1b2430;--on:#ffffff;--am:#1f6fb5;--co:#d9482b;--ok:#2e8b57;--mut:#5b6777;--ln:#d5dbe5;box-sizing:border-box}
+*,*::before,*::after{box-sizing:inherit}
+html{font-size:28px;height:100%}
+@media(min-width:1600px){html{font-size:36px}}@media(max-width:1000px){html{font-size:22px}}@media(max-width:640px){html{font-size:17px}}
+body{margin:0;height:100%;background:linear-gradient(180deg,#ffffff 0%,#f7f9fc 100%);color:var(--tx);font:1rem/1.4 "Trebuchet MS",Verdana,sans-serif;display:flex;flex-direction:column;overflow:hidden;padding-top:env(safe-area-inset-top,0)}
+h1,h2{font-family:Rockwell,"Roboto Slab",Georgia,serif;margin:0;line-height:1.1;color:#101823}
+h1{font-size:3rem}h2{font-size:2rem;margin:.25em 0 .5em}
+p{margin:.3em 0}code,.mono,.tx{font-family:ui-monospace,Consolas,monospace}
+#deck{flex:1;position:relative;min-height:0}
+.s{position:absolute;inset:0;padding:.7rem clamp(20px,5vw,80px) .4rem;overflow:auto;display:none}
+.s.on{display:flex;flex-direction:column;animation:in .35s ease-out}
+@keyframes in{from{opacity:0;transform:translateX(30px)}}
+.tb{display:flex;align-items:center;gap:.3em;font:.55rem ui-monospace,Consolas,monospace;color:var(--mut);border-bottom:1px solid var(--ln);padding-bottom:.35em;margin-bottom:.4em}
+.tb i{width:.6em;height:.6em;border-radius:50%;background:var(--co)}.tb i+i{background:var(--am)}.tb i+i+i{background:var(--ok)}.tb span{margin-left:.5em}
+.tg{align-self:flex-start;display:inline-block;font:.55rem ui-monospace,Consolas,monospace;background:var(--co);color:var(--on);padding:.1em .8em;border-radius:99px}
+.tg.ex{background:var(--ok);color:var(--on)}.tg.ex::before{content:"";display:inline-block;width:.5em;height:.5em;border-radius:50%;background:var(--on);margin-right:.5em;animation:bl 1.2s infinite}@keyframes bl{50%{opacity:.2}}
+.act{display:flex;flex-wrap:wrap;align-items:center;gap:.3rem}
+.cg.c4{grid-template-columns:repeat(2,1fr)}.cg.sm{grid-template-columns:repeat(3,1fr);gap:.7rem;padding-bottom:.5rem}.cg.sm .it{font-size:.85rem;padding:.6rem .9rem}.cg.sm .it b{font-size:1.05rem;margin-bottom:.25rem}@media(max-width:800px){.cg{grid-auto-rows:auto}.cg.sm,.cg.c4{grid-template-columns:1fr}}
+.cg{flex:1;display:grid;grid-auto-rows:1fr;min-height:0;grid-template-columns:repeat(auto-fit,minmax(11rem,1fr));gap:1rem;align-content:center;padding-bottom:1rem}
+.it{background:var(--pn);border:1px solid var(--ln);border-top:6px solid var(--am);border-radius:14px;padding:1.1rem 1.2rem;font-size:1.05rem;line-height:1.35;box-shadow:0 2px 10px rgba(27,36,48,.06)}
+.it b{display:block;font:700 1.4rem/1.15 Rockwell,"Roboto Slab",Georgia,serif;color:var(--am);margin-bottom:.4rem}
+.two{flex:1;min-height:0;display:grid;grid-template-columns:.7fr 1.3fr;gap:1.2rem;align-items:stretch}
+@media(max-width:800px){.two{grid-template-columns:1fr}}
+.b{font:inherit;font-size:.9rem;font-weight:700;cursor:pointer;border:2px solid var(--am);background:var(--am);color:var(--on);padding:.3em .9em;border-radius:6px;margin:.4em .3em 0 0}
+.b.o{background:transparent;color:var(--am)}
+.b:focus-visible,.ch:focus-visible,.dt:focus-visible{outline:3px solid var(--tx);outline-offset:2px}
+.ch{font:inherit;font-size:.85rem;cursor:pointer;border:2px solid var(--ln);background:#fff;color:var(--tx);border-radius:6px;padding:.2em .6em;margin:0 .25em .3em 0}
+.ch.sel{background:var(--co);border-color:var(--co);color:var(--on)}
+.sc{flex:1;min-height:8rem;background:var(--pn);border:1px solid var(--ln);border-radius:14px;padding:1rem 1.2rem;position:relative;overflow:hidden;font-size:1rem;display:flex;flex-direction:column;justify-content:center;gap:.4rem}
+.cards{display:flex;gap:.5rem;justify-content:space-around;flex-wrap:wrap}
+.cd{flex:1;min-width:5.5rem;background:#fff;border:2px solid var(--ln);border-radius:8px;padding:.5rem .7rem;font-size:.9rem;text-align:center;transition:.4s;box-shadow:0 1px 4px rgba(27,36,48,.06)}
+.cd.on{border-color:var(--am);transform:translateY(-3px)}.cd.hit{border-color:var(--ok);background:#eaf7ef}.cd.bad{border-color:var(--co);background:#fdeae5}
+.cd.dead{opacity:.35;filter:grayscale(1)}.cd.go{transform:translateY(1.6rem) scale(.6);opacity:0}.cd.new{animation:in .6s}
+.pb{height:.8rem;background:var(--ln);border-radius:4px;overflow:hidden;margin:.3rem 0}
+.pb i{display:block;height:100%;width:0;background:var(--am);transition:width linear}.pb.r i{background:var(--co)}.pb.g i{background:var(--ok)}
+.led{display:inline-block;width:.6em;height:.6em;border-radius:50%;background:var(--ok);margin:0 .3em;transition:.3s;box-shadow:0 0 6px var(--ok)}.led.off{background:var(--co);box-shadow:0 0 6px var(--co)}
+.tx{font-size:.8rem;line-height:1.5;white-space:pre-wrap;text-align:left}
+.msg{font:.85rem/1.4 ui-monospace,Consolas,monospace;min-height:1.4em;margin:.5rem 0 0;color:var(--tx)}.msg::before{content:"> ";color:var(--am)}
+.rc{display:inline-block;background:#fff;border:1px solid var(--ln);border-radius:4px;padding:0 .4em;margin:.15em;font-size:.8rem;transition:.3s}.rc.hit{background:var(--ok);border-color:var(--ok);color:var(--on);animation:in .4s}
+.tbl{width:100%;border-collapse:collapse;font-size:.9rem;background:#fff}.tbl td,.tbl th{text-align:left;padding:.15em .4em;border-bottom:1px solid var(--ln)}
+.flip{position:relative;height:clamp(12rem,46vh,22rem);transform-style:preserve-3d;transition:transform .9s}.flip.fl{transform:rotateY(180deg)}
+.sc.pers{perspective:1200px}.fc{position:absolute;inset:0;backface-visibility:hidden}.f2{transform:rotateY(180deg)}
+.lk{border-top:3px dashed var(--am);margin:.5rem 0;animation:dash 1s linear infinite}@keyframes dash{50%{border-color:var(--co)}}
+.fan{display:inline-block;font-size:2rem;animation:spin linear infinite}@keyframes spin{to{transform:rotate(360deg)}}
+.trk{position:relative;height:14px;background:var(--ln);border-radius:7px;flex:1;margin:0 .5rem}.trk i{position:absolute;left:0;top:0;width:14px;height:14px;border-radius:50%;background:var(--am)}
+.ln2{display:flex;align-items:center;font-size:.9rem;margin:.5rem 0}.ln2 span{width:3rem}.ln2 b{width:6rem;color:var(--ok);font-weight:400}
+.scr{background:#1e2633;color:#e8eef7;border-radius:6px;padding:.5rem .7rem;min-height:9rem}
+.off{position:absolute;inset:0;background:#1e2633;color:#c9d3e0;display:grid;place-items:center;opacity:0;pointer-events:none;transition:opacity .2s;font-size:.8rem}.off.on{opacity:1}
+.bn{background:var(--am);color:var(--on);border-radius:6px;padding:.1em .6em;font-size:.85rem;font-weight:700;margin-bottom:.4rem;animation:in .5s}
+.rg{display:grid;grid-template-columns:repeat(4,1fr);gap:.3rem;margin-top:.5rem}.rg .ch{margin:0;text-align:center}
+.fl{position:relative;display:flex;gap:1.6rem;margin-top:1.4rem}.fl::before{content:"";position:absolute;left:1rem;right:1rem;top:58%;border-top:3px dashed var(--am);animation:dash 1s linear infinite}.fl .dbi{position:relative;width:3.6rem;animation:bob 3s ease-in-out infinite}.fl .dbi:nth-child(2){animation-delay:.5s}.fl .dbi:nth-child(3){animation-delay:1s}.fl .dbi:nth-child(4){animation-delay:1.5s}
+@keyframes bob{50%{transform:translateY(-10px)}}
+.cv{flex:1;display:grid;grid-template-columns:1.35fr .8fr;gap:2rem;align-items:center}@media(max-width:800px){.cv{grid-template-columns:1fr}}
+.team{background:var(--pn);border:1px solid var(--ln);border-top:6px solid var(--am);border-radius:14px;padding:.9rem 1.2rem}.team h3{font:700 1.2rem Rockwell,"Roboto Slab",serif;color:var(--am);margin:0 0 .4rem}.team ul{list-style:none;margin:0;padding:0}.team li{padding:.45rem 0;border-top:1px solid var(--ln);font-size:.85rem}
+#dots{position:relative;display:flex;justify-content:center;gap:.5rem;padding:.4rem 0 calc(.5rem + env(safe-area-inset-bottom,0))}
+#ct{position:absolute;right:clamp(20px,5vw,80px);top:.35rem;font:.6rem ui-monospace,Consolas,monospace;color:var(--mut)}
+.dt{width:.6rem;height:.6rem;border-radius:50%;border:0;background:var(--ln);cursor:pointer;padding:0}.dt.on{background:var(--am);transform:scale(1.3)}
+input[type=range]{width:100%;accent-color:var(--am)}label{font-size:.85rem;margin-left:.5rem}
+.netsvg{width:100%;max-height:16rem}
+.lp{animation:bl 1.4s infinite}
+.stage{flex:none;height:clamp(9rem,28vh,13rem);margin:.4rem 0 .6rem;background:#fff;border:1px solid var(--ln);border-radius:14px;overflow:hidden;box-shadow:0 2px 10px rgba(27,36,48,.06)}
+.stage svg{display:block;width:100%;height:100%}
+.ico{display:block;width:100%;height:3.4rem;margin-bottom:.45rem}
+@media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
+<symbol id="cyl" viewBox="0 0 60 70"><path d="M5 12v46c0 6 11 10 25 10s25-4 25-10V12Z" fill="currentColor" opacity=".85"/><ellipse cx="30" cy="12" rx="25" ry="9" fill="currentColor"/><ellipse cx="30" cy="10.5" rx="17" ry="4" fill="#fff" opacity=".4"/><path d="M5 30c0 6 11 10 25 10s25-4 25-10" fill="none" stroke="#0d2c4f" stroke-opacity=".3" stroke-width="1.5"/></symbol>
+</defs></svg>
+<div id="deck">
+
+<section class="s" data-f="distribuidas.sql">
+<div class="cv"><div>
+<p class="mono" style="color:var(--am);margin:0">SELECT * FROM unidad_4;</p>
+<h1>Sistemas de bases de datos distribuidas</h1>
+<p style="color:var(--mut)">Base de Datos II. Guía del Ing. Miguel Fabricio Bone Andrade, Mgtr.</p>
+<div class="fl" id="fl"></div></div>
+<div class="team"><h3>Integrantes</h3><ul><li>Luis Alejandro Gonzales Cedeño</li><li>Jordyc Alexander Parraga Villavicencio</li><li>Luis Antonio Pazos Silva</li><li>Alexandra Jamileth Zurita Herrera</li></ul></div>
+</div></section>
+
+<section class="s" data-f="01_que_es_concepto.sql">
+<span class="tg">Concepto</span><h2>¿Qué es una base de datos distribuida?</h2>
+<div class="stage"><svg viewBox="0 0 600 200" role="img" aria-label="Un usuario consulta una tabla que vive en tres servidores">
+<rect x="30" y="50" width="130" height="100" rx="10" fill="#fff" stroke="#1f6fb5" stroke-width="2"/>
+<rect x="30" y="50" width="130" height="24" rx="10" fill="#1f6fb5"/>
+<text x="95" y="67" text-anchor="middle" font-size="12" fill="#fff" font-weight="700">clientes</text>
+<text x="95" y="100" text-anchor="middle" font-size="11" fill="#1b2430">Ana · Luis · Rosa</text>
+<text x="95" y="120" text-anchor="middle" font-size="11" fill="#1b2430">Pedro · Eva · Tito</text>
+<g fill="none" stroke="#b7c3d3" stroke-width="3" stroke-linecap="round"><path d="M160 100 C230 100 260 35 360 35"/><path d="M160 100 L360 100"/><path d="M160 100 C230 100 260 165 360 165"/></g>
+<g fill="#fff" stroke="#1f6fb5" stroke-width="1.8"><rect x="360" y="15" width="150" height="40" rx="7"/><rect x="360" y="80" width="150" height="40" rx="7"/><rect x="360" y="145" width="150" height="40" rx="7"/></g>
+<text x="372" y="39" font-size="11" fill="#1b2430" font-weight="700">Quito · Ana, Pedro</text>
+<text x="372" y="104" font-size="11" fill="#1b2430" font-weight="700">Guayaquil · Luis, Eva</text>
+<text x="372" y="169" font-size="11" fill="#1b2430" font-weight="700">Cuenca · Rosa, Tito</text>
+<circle class="lp" cx="497" cy="35" r="3" fill="#2e8b57"/><circle class="lp" cx="497" cy="100" r="3" fill="#2e8b57" style="animation-delay:.5s"/><circle class="lp" cx="497" cy="165" r="3" fill="#2e8b57" style="animation-delay:1s"/>
+<circle r="5" fill="#1f6fb5"><animateMotion dur="2.4s" repeatCount="indefinite" path="M160 100 C230 100 260 35 360 35"/></circle>
+<circle r="5" fill="#2e8b57"><animateMotion dur="2.4s" begin="1.2s" repeatCount="indefinite" path="M360 35 C260 35 230 100 160 100"/></circle>
+<circle r="5" fill="#1f6fb5"><animateMotion dur="2.4s" begin=".6s" repeatCount="indefinite" path="M160 100 L360 100"/></circle>
+<circle r="5" fill="#2e8b57"><animateMotion dur="2.4s" begin="1.8s" repeatCount="indefinite" path="M360 100 L160 100"/></circle>
+<circle r="5" fill="#1f6fb5"><animateMotion dur="2.4s" begin="1.2s" repeatCount="indefinite" path="M160 100 C230 100 260 165 360 165"/></circle>
+<circle r="5" fill="#2e8b57"><animateMotion dur="2.4s" repeatCount="indefinite" path="M360 165 C260 165 230 100 160 100"/></circle>
+</svg></div>
+<div class="cg">
+<div class="it"><b>Datos repartidos</b> Están en varios sitios conectados por una red</div>
+<div class="it"><b>Un solo sistema</b> El usuario los ve como una sola base</div>
+<div class="it"><b>Sitios que cooperan</b> Cada uno funciona por su cuenta y se ayudan entre sí</div>
+</div>
+</section>
+
+<section class="s" data-f="01_que_es_ejemplo.sql">
+<span class="tg ex">Ejemplo</span><h2>Lo que ves y lo que hay detrás</h2>
+<div class="sc pers"><div class="flip" id="fp">
+<div class="fc"><p class="tx" style="margin:0">Tú ves una sola tabla: <b>clientes</b></p>
+<table class="tbl"><tr><th>Cliente</th><th>Saldo</th></tr><tr><td>Ana Mora</td><td>$450</td></tr><tr><td>Luis Vera</td><td>$310</td></tr><tr><td>Rosa Cabrera</td><td>$820</td></tr><tr><td>Pedro Salas</td><td>$95</td></tr><tr><td>Eva Ruiz</td><td>$1200</td></tr></table></div>
+<div class="fc f2"><p class="tx" style="margin:0">En realidad hay tres servidores unidos por la red:</p>
+<div class="cards" style="margin-top:.4rem"><div class="cd"><b>Quito</b><br>Ana, Pedro</div><div class="cd"><b>Guayaquil</b><br>Luis, Eva</div><div class="cd"><b>Cuenca</b><br>Rosa</div></div><div class="lk"></div></div>
+</div></div>
+<div class="act"><button class="b" id="b1">Ver por dentro</button></div>
+</section>
+
+<section class="s" data-f="02_acid_concepto.sql">
+<span class="tg">Concepto</span><h2>Propiedades ACID</h2>
+<div class="cg c4">
+<div class="it"><svg class="ico" viewBox="0 0 120 48" aria-hidden="true"><g><animate attributeName="opacity" values="0.15;1;1;0.15" keyTimes="0;.25;.75;1" dur="3.2s" repeatCount="indefinite"/><rect x="18" y="12" width="24" height="24" rx="4" fill="#1f6fb5"/><rect x="48" y="12" width="24" height="24" rx="4" fill="#1f6fb5"/><rect x="78" y="12" width="24" height="24" rx="4" fill="#1f6fb5"/></g></svg><b>Atomicidad</b> Se hace todo o no se hace nada</div>
+<div class="it"><svg class="ico" viewBox="0 0 120 48" aria-hidden="true"><rect x="16" y="14" width="92" height="14" rx="7" fill="#e6edf6"/><rect x="16" y="14" width="50" height="14" rx="7" fill="#2e8b57"><animate attributeName="width" values="20;92;50;20" dur="4s" repeatCount="indefinite"/></rect><line x1="16" y1="6" x2="16" y2="36" stroke="#d9482b" stroke-width="2" stroke-dasharray="3 3"/><text x="16" y="44" font-size="9" fill="#5b6777">límite: 0</text></svg><b>Consistencia</b> La base siempre queda en un estado válido</div>
+<div class="it"><svg class="ico" viewBox="0 0 120 48" aria-hidden="true"><rect x="10" y="6" width="22" height="14" rx="3" fill="#1f6fb5"><animate attributeName="x" values="10;84;10" dur="3s" repeatCount="indefinite"/></rect><rect x="88" y="28" width="22" height="14" rx="3" fill="#d9482b"><animate attributeName="x" values="88;14;88" dur="3s" repeatCount="indefinite"/></rect></svg><b>Aislamiento</b> Dos transacciones a la vez no se estorban</div>
+<div class="it"><svg class="ico" viewBox="0 0 120 48" aria-hidden="true"><use href="#cyl" x="30" y="2" width="34" height="42" style="color:#1f6fb5"/><path d="M76 24 l7 7 l14 -15" fill="none" stroke="#2e8b57" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"><animate attributeName="opacity" values="0;1;1;0" keyTimes="0;.2;.85;1" dur="3s" repeatCount="indefinite"/></path></svg><b>Durabilidad</b> Lo confirmado sobrevive a una falla</div>
+</div>
+</section>
+
+<section class="s" data-f="02_acid_ejemplo.sql">
+<span class="tg ex">Ejemplo</span><h2>ACID, una letra a la vez</h2>
+<div id="tabs"><button class="ch" data-t="A">Atomicidad</button><button class="ch" data-t="C">Consistencia</button><button class="ch" data-t="I">Aislamiento</button><button class="ch" data-t="D">Durabilidad</button></div>
+<div class="sc" id="as"></div><div id="ac"></div>
+</section>
+
+<section class="s" data-f="03_clasificacion_concepto.sql">
+<span class="tg">Concepto</span><h2>Tipos de SGBDD</h2>
+<div class="stage"><svg viewBox="0 0 600 200" role="img" aria-label="Sitios con el mismo DBMS y sitios con DBMS distintos">
+<line x1="300" y1="15" x2="300" y2="185" stroke="#d5dbe5" stroke-dasharray="4 5"/>
+<text x="150" y="24" text-anchor="middle" font-size="13" font-weight="700" fill="#1f6fb5">Homogéneo</text>
+<text x="450" y="24" text-anchor="middle" font-size="13" font-weight="700" fill="#d9482b">Heterogéneo</text>
+<g style="color:#1f6fb5"><use href="#cyl" x="50" y="60" width="50" height="58"/><use href="#cyl" x="125" y="60" width="50" height="58"/><use href="#cyl" x="200" y="60" width="50" height="58"/></g>
+<text x="75" y="140" text-anchor="middle" font-size="10" fill="#1b2430">PostgreSQL</text><text x="150" y="140" text-anchor="middle" font-size="10" fill="#1b2430">PostgreSQL</text><text x="225" y="140" text-anchor="middle" font-size="10" fill="#1b2430">PostgreSQL</text>
+<g><rect x="0" y="0" width="44" height="18" rx="9" fill="#2e8b57"/><text x="22" y="13" text-anchor="middle" font-size="10" fill="#fff" font-weight="700">SQL</text><animateTransform attributeName="transform" type="translate" values="30 40;200 40;30 40" dur="4s" repeatCount="indefinite"/></g>
+<g style="color:#d9482b"><use href="#cyl" x="330" y="60" width="50" height="58" style="color:#d9482b"/></g>
+<use href="#cyl" x="410" y="60" width="50" height="58" style="color:#4a8fd6"/>
+<use href="#cyl" x="490" y="60" width="50" height="58" style="color:#2e8b57"/>
+<text x="355" y="140" text-anchor="middle" font-size="10" fill="#1b2430">Oracle</text><text x="435" y="140" text-anchor="middle" font-size="10" fill="#1b2430">MySQL</text><text x="515" y="140" text-anchor="middle" font-size="10" fill="#1b2430">SQL Server</text>
+<text x="355" y="162" text-anchor="middle" font-size="9" fill="#d9482b" font-weight="700" opacity="0">FETCH FIRST<animate attributeName="opacity" values="0;1;1;0" keyTimes="0;.1;.4;.5" dur="4s" repeatCount="indefinite"/></text>
+<text x="435" y="162" text-anchor="middle" font-size="9" fill="#4a8fd6" font-weight="700" opacity="0">LIMIT<animate attributeName="opacity" values="0;1;1;0" keyTimes="0;.1;.4;.5" dur="4s" begin="1.33s" repeatCount="indefinite"/></text>
+<text x="515" y="162" text-anchor="middle" font-size="9" fill="#2e8b57" font-weight="700" opacity="0">TOP<animate attributeName="opacity" values="0;1;1;0" keyTimes="0;.1;.4;.5" dur="4s" begin="2.66s" repeatCount="indefinite"/></text>
+<text x="450" y="190" text-anchor="middle" font-size="10" fill="#5b6777">cada sitio traduce el mismo pedido a su dialecto</text>
+</svg></div>
+<div class="cg">
+<div class="it"><b>Homogéneos</b> Todos los sitios usan el mismo DBMS</div>
+<div class="it"><b>Heterogéneos</b> Cada sitio puede usar un DBMS distinto, unidos con conectores (gateways)</div>
+</div>
+</section>
+
+<section class="s" data-f="03_clasificacion_ejemplo.sql">
+<span class="tg ex">Ejemplo</span><h2>Un mismo pedido, distintos dialectos</h2>
+<div class="act"><button class="ch sel" id="mh">Homogéneo</button><button class="ch" id="mx">Heterogéneo</button></div>
+<div class="sc" id="cs"></div><div class="act"><button class="b" id="bq">Pedir 3 filas de clientes</button></div>
+</section>
+
+<section class="s" data-f="04_consideraciones_concepto.sql">
+<span class="tg">Concepto</span><h2>Al distribuir una base de datos</h2>
+<div class="stage"><svg viewBox="0 0 600 200" role="img" aria-label="Una consulta se reparte en tres sedes en paralelo y el resultado se une">
+<rect x="20" y="70" width="120" height="60" rx="10" fill="#fff" stroke="#1f6fb5" stroke-width="2"/>
+<text x="80" y="95" text-anchor="middle" font-size="12" font-weight="700" fill="#1b2430">Consulta</text>
+<text x="80" y="114" text-anchor="middle" font-size="10" fill="#5b6777">600 filas</text>
+<g fill="none" stroke="#b7c3d3" stroke-width="3"><path d="M140 100 C200 100 220 43 330 43"/><path d="M140 100 L330 100"/><path d="M140 100 C200 100 220 157 330 157"/><path d="M460 43 C480 43 480 100 500 100"/><path d="M460 100 L500 100"/><path d="M460 157 C480 157 480 100 500 100"/></g>
+<g fill="#fff" stroke="#1f6fb5" stroke-width="1.8"><rect x="330" y="25" width="130" height="36" rx="7"/><rect x="330" y="82" width="130" height="36" rx="7"/><rect x="330" y="139" width="130" height="36" rx="7"/></g>
+<g font-size="11" font-weight="700" fill="#1b2430"><text x="342" y="40">Quito</text><text x="342" y="97">Guayaquil</text><text x="342" y="154">Cuenca</text></g>
+<g fill="#e6edf6"><rect x="342" y="47" width="106" height="6" rx="3"/><rect x="342" y="104" width="106" height="6" rx="3"/><rect x="342" y="161" width="106" height="6" rx="3"/></g>
+<rect x="342" y="47" width="0" height="6" rx="3" fill="#1f6fb5"><animate attributeName="width" values="0;106;106" keyTimes="0;.8;1" dur="2.4s" repeatCount="indefinite"/></rect>
+<rect x="342" y="104" width="0" height="6" rx="3" fill="#2e8b57"><animate attributeName="width" values="0;106;106" keyTimes="0;.8;1" dur="3.1s" repeatCount="indefinite"/></rect>
+<rect x="342" y="161" width="0" height="6" rx="3" fill="#d9482b"><animate attributeName="width" values="0;106;106" keyTimes="0;.8;1" dur="3.8s" repeatCount="indefinite"/></rect>
+<rect x="500" y="70" width="80" height="60" rx="10" fill="#e8f6ee" stroke="#2e8b57" stroke-width="2"/>
+<text x="540" y="104" text-anchor="middle" font-size="11" font-weight="700" fill="#1b2430">Resultado</text>
+<circle r="5" fill="#1f6fb5"><animateMotion dur="2.2s" repeatCount="indefinite" path="M140 100 C200 100 220 43 330 43"/></circle>
+<circle r="5" fill="#1f6fb5"><animateMotion dur="2.2s" begin=".5s" repeatCount="indefinite" path="M140 100 L330 100"/></circle>
+<circle r="5" fill="#1f6fb5"><animateMotion dur="2.2s" begin="1s" repeatCount="indefinite" path="M140 100 C200 100 220 157 330 157"/></circle>
+<circle r="5" fill="#2e8b57"><animateMotion dur="2.2s" begin=".3s" repeatCount="indefinite" path="M460 43 C480 43 480 100 500 100"/></circle>
+<circle r="5" fill="#2e8b57"><animateMotion dur="2.2s" begin="1.2s" repeatCount="indefinite" path="M460 157 C480 157 480 100 500 100"/></circle>
+</svg></div>
+<div class="cg">
+<div class="it"><b>Control distribuido</b> Hay un administrador global y cada sitio conserva autonomía local</div>
+<div class="it"><b>Fiabilidad y disponibilidad</b> Si un sitio cae, los demás siguen con los datos repetidos</div>
+<div class="it"><b>Consultas más rápidas</b> Se dividen en subconsultas en paralelo</div>
+</div>
+</section>
+
+<section class="s" data-f="04_consideraciones_ejemplo.sql">
+<span class="tg ex">Ejemplo</span><h2>Consulta de 600 filas</h2>
+<div class="sc" id="vs"></div>
+<div class="act"><button class="b" id="bv">Lanzar consulta</button><button class="b o" id="bl">Política global</button><span class="tx" style="color:var(--mut)"> Clic en una sede para apagarla</span></div>
+</section>
+
+<section class="s" data-f="05_fragmentacion_concepto.sql">
+<span class="tg">Concepto</span><h2>Fragmentación</h2>
+<div class="stage"><svg viewBox="0 0 600 200" role="img" aria-label="Una tabla se parte en fragmentos que viajan a tres sitios">
+<rect x="30" y="30" width="170" height="130" rx="8" fill="none" stroke="#5b6777" stroke-dasharray="5 4"/>
+<text x="115" y="22" text-anchor="middle" font-size="11" fill="#5b6777">tabla clientes</text>
+<g><rect x="40" y="40" width="150" height="30" rx="5" fill="#1f6fb5"/><text x="115" y="59" text-anchor="middle" font-size="11" fill="#fff" font-weight="700">Quito · Ana, Pedro</text><animateTransform attributeName="transform" type="translate" values="0 0;230 -15;230 -15;0 0" keyTimes="0;.4;.8;1" dur="5s" repeatCount="indefinite"/></g>
+<g><rect x="40" y="80" width="150" height="30" rx="5" fill="#2e8b57"/><text x="115" y="99" text-anchor="middle" font-size="11" fill="#fff" font-weight="700">Guayaquil · Luis, Eva</text><animateTransform attributeName="transform" type="translate" values="0 0;230 8;230 8;0 0" keyTimes="0;.4;.8;1" dur="5s" repeatCount="indefinite"/></g>
+<g><rect x="40" y="120" width="150" height="30" rx="5" fill="#d9482b"/><text x="115" y="139" text-anchor="middle" font-size="11" fill="#fff" font-weight="700">Cuenca · Rosa, Tito</text><animateTransform attributeName="transform" type="translate" values="0 0;230 30;230 30;0 0" keyTimes="0;.4;.8;1" dur="5s" repeatCount="indefinite"/></g>
+<g style="color:#1f6fb5"><use href="#cyl" x="440" y="22" width="46" height="54"/></g>
+<g style="color:#2e8b57"><use href="#cyl" x="440" y="82" width="46" height="54"/></g>
+<g style="color:#d9482b"><use href="#cyl" x="440" y="142" width="46" height="54"/></g>
+<text x="500" y="52" font-size="11" font-weight="700" fill="#1b2430">Quito</text>
+<text x="500" y="112" font-size="11" font-weight="700" fill="#1b2430">Guayaquil</text>
+<text x="500" y="172" font-size="11" font-weight="700" fill="#1b2430">Cuenca</text>
+</svg></div>
+<div class="cg">
+<div class="it"><b>Fragmentar</b> Partir una tabla en trozos guardados en sitios distintos</div>
+<div class="it"><b>Localizar</b> El sistema sabe en qué sitio está cada trozo</div>
+<div class="it"><b>Para el usuario</b> Sigue siendo una sola tabla</div>
+</div>
+</section>
+
+<section class="s" data-f="05_fragmentacion_ejemplo.sql">
+<span class="tg ex">Ejemplo</span><h2>Clientes partidos por ciudad</h2>
+<div class="sc" id="fg"></div>
+<div class="act"><button class="b q" data-q="*">Todos</button><button class="b o q" data-q="Quito">Solo Quito</button><button class="b o q" data-q="Cuenca">Solo Cuenca</button></div>
+</section>
+
+<section class="s" data-f="06_doce_reglas_concepto.sql">
+<span class="tg">Concepto</span><h2>Las doce reglas (1 a 6)</h2>
+<div class="stage"><svg viewBox="0 0 600 200" role="img" aria-label="Las reglas del 1 al 6 se iluminan en secuencia">
+<circle cx="300" cy="100" r="70" fill="none" stroke="#d5dbe5" stroke-width="2"/>
+<circle cx="300" cy="100" r="70" fill="none" stroke="#1f6fb5" stroke-width="2" stroke-dasharray="4 10"><animateTransform attributeName="transform" type="rotate" from="0 300 100" to="360 300 100" dur="10s" repeatCount="indefinite"/></circle>
+<g><circle cx="300" cy="30" r="20" fill="#fff" stroke="#1f6fb5" stroke-width="2"><animate attributeName="fill" values="#fff;#1f6fb5;#fff" dur="3s" begin="0s" repeatCount="indefinite"/></circle><text x="300" y="36" text-anchor="middle" font-size="15" font-weight="700" fill="#1b2430"><animate attributeName="fill" values="#1b2430;#fff;#1b2430" dur="3s" begin="0s" repeatCount="indefinite"/>1</text></g>
+<g><circle cx="361" cy="65" r="20" fill="#fff" stroke="#1f6fb5" stroke-width="2"><animate attributeName="fill" values="#fff;#1f6fb5;#fff" dur="3s" begin="0.5s" repeatCount="indefinite"/></circle><text x="361" y="71" text-anchor="middle" font-size="15" font-weight="700" fill="#1b2430"><animate attributeName="fill" values="#1b2430;#fff;#1b2430" dur="3s" begin="0.5s" repeatCount="indefinite"/>2</text></g>
+<g><circle cx="361" cy="135" r="20" fill="#fff" stroke="#1f6fb5" stroke-width="2"><animate attributeName="fill" values="#fff;#1f6fb5;#fff" dur="3s" begin="1s" repeatCount="indefinite"/></circle><text x="361" y="141" text-anchor="middle" font-size="15" font-weight="700" fill="#1b2430"><animate attributeName="fill" values="#1b2430;#fff;#1b2430" dur="3s" begin="1s" repeatCount="indefinite"/>3</text></g>
+<g><circle cx="300" cy="170" r="20" fill="#fff" stroke="#1f6fb5" stroke-width="2"><animate attributeName="fill" values="#fff;#1f6fb5;#fff" dur="3s" begin="1.5s" repeatCount="indefinite"/></circle><text x="300" y="176" text-anchor="middle" font-size="15" font-weight="700" fill="#1b2430"><animate attributeName="fill" values="#1b2430;#fff;#1b2430" dur="3s" begin="1.5s" repeatCount="indefinite"/>4</text></g>
+<g><circle cx="239" cy="135" r="20" fill="#fff" stroke="#1f6fb5" stroke-width="2"><animate attributeName="fill" values="#fff;#1f6fb5;#fff" dur="3s" begin="2s" repeatCount="indefinite"/></circle><text x="239" y="141" text-anchor="middle" font-size="15" font-weight="700" fill="#1b2430"><animate attributeName="fill" values="#1b2430;#fff;#1b2430" dur="3s" begin="2s" repeatCount="indefinite"/>5</text></g>
+<g><circle cx="239" cy="65" r="20" fill="#fff" stroke="#1f6fb5" stroke-width="2"><animate attributeName="fill" values="#fff;#1f6fb5;#fff" dur="3s" begin="2.5s" repeatCount="indefinite"/></circle><text x="239" y="71" text-anchor="middle" font-size="15" font-weight="700" fill="#1b2430"><animate attributeName="fill" values="#1b2430;#fff;#1b2430" dur="3s" begin="2.5s" repeatCount="indefinite"/>6</text></g>
+<text x="300" y="97" text-anchor="middle" font-size="13" font-weight="700" fill="#1b2430">12 reglas de Date</text>
+<text x="300" y="115" text-anchor="middle" font-size="11" fill="#5b6777">1 a 6</text>
+</svg></div><div class="cg sm" id="ra"></div>
+</section>
+<section class="s" data-f="06_doce_reglas_concepto2.sql">
+<span class="tg">Concepto</span><h2>Las doce reglas (7 a 12)</h2>
+<div class="stage"><svg viewBox="0 0 600 200" role="img" aria-label="Las reglas del 7 al 12 se iluminan en secuencia">
+<circle cx="300" cy="100" r="70" fill="none" stroke="#d5dbe5" stroke-width="2"/>
+<circle cx="300" cy="100" r="70" fill="none" stroke="#2e8b57" stroke-width="2" stroke-dasharray="4 10"><animateTransform attributeName="transform" type="rotate" from="360 300 100" to="0 300 100" dur="10s" repeatCount="indefinite"/></circle>
+<g><circle cx="300" cy="30" r="20" fill="#fff" stroke="#2e8b57" stroke-width="2"><animate attributeName="fill" values="#fff;#2e8b57;#fff" dur="3s" begin="0s" repeatCount="indefinite"/></circle><text x="300" y="36" text-anchor="middle" font-size="15" font-weight="700" fill="#1b2430"><animate attributeName="fill" values="#1b2430;#fff;#1b2430" dur="3s" begin="0s" repeatCount="indefinite"/>7</text></g>
+<g><circle cx="361" cy="65" r="20" fill="#fff" stroke="#2e8b57" stroke-width="2"><animate attributeName="fill" values="#fff;#2e8b57;#fff" dur="3s" begin="0.5s" repeatCount="indefinite"/></circle><text x="361" y="71" text-anchor="middle" font-size="15" font-weight="700" fill="#1b2430"><animate attributeName="fill" values="#1b2430;#fff;#1b2430" dur="3s" begin="0.5s" repeatCount="indefinite"/>8</text></g>
+<g><circle cx="361" cy="135" r="20" fill="#fff" stroke="#2e8b57" stroke-width="2"><animate attributeName="fill" values="#fff;#2e8b57;#fff" dur="3s" begin="1s" repeatCount="indefinite"/></circle><text x="361" y="141" text-anchor="middle" font-size="15" font-weight="700" fill="#1b2430"><animate attributeName="fill" values="#1b2430;#fff;#1b2430" dur="3s" begin="1s" repeatCount="indefinite"/>9</text></g>
+<g><circle cx="300" cy="170" r="20" fill="#fff" stroke="#2e8b57" stroke-width="2"><animate attributeName="fill" values="#fff;#2e8b57;#fff" dur="3s" begin="1.5s" repeatCount="indefinite"/></circle><text x="300" y="176" text-anchor="middle" font-size="15" font-weight="700" fill="#1b2430"><animate attributeName="fill" values="#1b2430;#fff;#1b2430" dur="3s" begin="1.5s" repeatCount="indefinite"/>10</text></g>
+<g><circle cx="239" cy="135" r="20" fill="#fff" stroke="#2e8b57" stroke-width="2"><animate attributeName="fill" values="#fff;#2e8b57;#fff" dur="3s" begin="2s" repeatCount="indefinite"/></circle><text x="239" y="141" text-anchor="middle" font-size="15" font-weight="700" fill="#1b2430"><animate attributeName="fill" values="#1b2430;#fff;#1b2430" dur="3s" begin="2s" repeatCount="indefinite"/>11</text></g>
+<g><circle cx="239" cy="65" r="20" fill="#fff" stroke="#2e8b57" stroke-width="2"><animate attributeName="fill" values="#fff;#2e8b57;#fff" dur="3s" begin="2.5s" repeatCount="indefinite"/></circle><text x="239" y="71" text-anchor="middle" font-size="15" font-weight="700" fill="#1b2430"><animate attributeName="fill" values="#1b2430;#fff;#1b2430" dur="3s" begin="2.5s" repeatCount="indefinite"/>12</text></g>
+<text x="300" y="97" text-anchor="middle" font-size="13" font-weight="700" fill="#1b2430">12 reglas de Date</text>
+<text x="300" y="115" text-anchor="middle" font-size="11" fill="#5b6777">7 a 12</text>
+</svg></div><div class="cg sm" id="rb"></div>
+</section>
+
+<section class="s" data-f="06_doce_reglas_ejemplo.sql">
+<span class="tg ex">Ejemplo</span><h2>Las doce reglas en acción</h2>
+<div class="two"><div><p id="rt"><b>Elige una regla</b></p><p id="rd" style="color:var(--mut)">Toca un número para ver su ejemplo.</p><div class="rg" id="rg"></div></div>
+<div class="sc" id="rs" style="min-height:11rem"></div></div>
+</section>
+
+</div>
+<div id="dots"><span id="ct"></span></div>
+
+<script>
+const $=(s,r=document)=>r.querySelector(s),$$=(s,r=document)=>[...r.querySelectorAll(s)];
+const NS='http://www.w3.org/2000/svg';
+let run=0;
+const w=ms=>{const id=run;return new Promise((ok,no)=>setTimeout(()=>id==run?ok():no('x'),ms))};
+async function play(f){const id=++run;try{await f()}catch(e){if(e!=='x')console.error(e)}}
+async function ty(el,t,ms=30){el.textContent='';for(const c of t){el.textContent+=c;await w(ms)}}
+function fill(i,p,ms){i.style.transitionDuration='0ms';if(!ms){i.style.width=p+'%';return}void i.offsetWidth;i.style.transitionDuration=ms+'ms';i.style.width=p+'%'}
+
+// Cilindro de base de datos con sombreado, brillo superior y disco
+let cylN=0;
+const cyl=c=>{const id='cg'+(cylN++);return `<svg viewBox="0 0 60 70"><defs><linearGradient id="${id}" x1="0" x2="1"><stop offset="0" stop-color="#ffffff" stop-opacity=".45"/><stop offset=".3" stop-color="${c}"/><stop offset="1" stop-color="#0d2c4f" stop-opacity=".45"/></linearGradient><filter id="${id}s" x="-20%" y="-20%" width="140%" height="150%"><feDropShadow dx="0" dy="3" stdDeviation="2.5" flood-color="#1b2430" flood-opacity=".25"/></filter></defs><g filter="url(#${id}s)"><path d="M5 12v46c0 6 11 10 25 10s25-4 25-10V12Z" fill="url(#${id})"/><ellipse cx="30" cy="12" rx="25" ry="9" fill="${c}"/><ellipse cx="30" cy="10.5" rx="17" ry="4" fill="#fff" opacity=".4"/><path d="M5 30c0 6 11 10 25 10s25-4 25-10M5 46c0 6 11 10 25 10s25-4 25-10" fill="none" stroke="#0d2c4f" stroke-width="1.5" stroke-opacity=".3"/></g></svg>`};
+const btn=(ct,t,f,o)=>{const b=document.createElement('button');b.className='b'+(o?' o':'');b.textContent=t;b.onclick=()=>play(f);ct.appendChild(b);return b};
+
+// navegación (flechas, deslizar y puntos)
+const S=$$('.s');let cur=0;
+S.forEach((s,k)=>{s.insertAdjacentHTML('afterbegin',`<div class="tb"><i></i><i></i><i></i><span>${s.dataset.f}</span></div>`);
+ const d=document.createElement('button');d.className='dt';d.setAttribute('aria-label','Diapositiva '+(k+1));d.onclick=()=>go(k);$('#dots').appendChild(d)});
+function go(n){run++;cur=Math.max(0,Math.min(S.length-1,n));S.forEach((s,k)=>s.classList.toggle('on',k==cur));$$('.dt').forEach((d,k)=>d.classList.toggle('on',k==cur));S[cur].scrollTop=0;$('#ct').textContent=(cur+1)+' / '+S.length}
+addEventListener('keydown',e=>{if(['ArrowRight','PageDown',' '].includes(e.key))go(cur+1);if(['ArrowLeft','PageUp'].includes(e.key))go(cur-1)});
+let tx=0;addEventListener('touchstart',e=>tx=e.touches[0].clientX);addEventListener('touchend',e=>{const d=e.changedTouches[0].clientX-tx;if(Math.abs(d)>70)go(cur+(d<0?1:-1))});
+$('#fl').innerHTML=['#1f6fb5','#d9482b','#4a8fd6','#2e8b57'].map(cyl).map(s=>`<div class="dbi">${s}</div>`).join('');
+
+// 1. qué es: tarjeta que gira
+let fp=0;$('#b1').onclick=function(){fp^=1;$('#fp').classList.toggle('fl',!!fp);this.textContent=fp?'Ver como usuario':'Ver por dentro'};
+
+// 2. ACID
+function acid(t){run++;$$('#tabs .ch').forEach(b=>b.classList.toggle('sel',b.dataset.t==t));const sc=$('#as'),ct=$('#ac');ct.innerHTML='';
+ const am=x=>$('#am').textContent=x;
+ if(t=='A'){sc.innerHTML=`<div class="cards"><div class="cd">Quito<br><b id="qa">$500</b></div><div class="cd">Guayaquil<br><b id="qb">$300</b></div></div><div class="cards" style="margin-top:.5rem"><div class="cd" id="p1">1. Descontar $100</div><div class="cd" id="p2">2. Abonar $100</div><div class="cd" id="p3">3. Confirmar</div></div><p class="msg" id="am">Transferir $100 de Quito a Guayaquil.</p>`;
+  btn(ct,'Transferir',async()=>{$$('#p1,#p2,#p3').forEach(x=>x.className='cd');$('#qa').textContent='$500';$('#qb').textContent='$300';
+   $('#p1').classList.add('hit');$('#qa').textContent='$400';am('Se descontaron $100 en Quito');await w(900);
+   if($('#cut').checked){$('#p2').classList.add('bad');am('⚡ Corte de luz a mitad de la operación');await w(1200);am('ROLLBACK: se deshace paso a paso');$('#p2').classList.remove('bad');await w(700);$('#p1').classList.remove('hit');$('#qa').textContent='$500';am('Quito vuelve a $500. No pasó nada.')}
+   else{$('#p2').classList.add('hit');$('#qb').textContent='$400';am('Se abonaron $100 en Guayaquil');await w(900);$('#p3').classList.add('hit');am('COMMIT: el total sigue en $800')}});
+  ct.insertAdjacentHTML('beforeend','<label><input type="checkbox" id="cut"> corte de luz</label>')}
+ if(t=='C'){sc.innerHTML=`<p class="tx">Cuenta con $500. Regla de la tabla: saldo ≥ 0</p><input type="range" id="sl" min="0" max="800" step="50" value="200" aria-label="Monto a retirar"><p>Retirar <b id="sv">$200</b></p><div class="pb" id="gb"><i></i></div><p class="msg" id="am"></p>`;
+  $('#sl').oninput=()=>$('#sv').textContent='$'+$('#sl').value;
+  btn(ct,'Retirar',async()=>{const x=+$('#sl').value,box=$('#gb'),bar=$('i',box);box.className='pb';fill(bar,100,0);am('Calculando el saldo…');await w(300);
+   if(x>500){box.classList.add('r');fill(bar,0,900);await w(1000);am(`RECHAZADO: el saldo quedaría −$${x-500}. Se cancela.`);await w(900);box.className='pb';fill(bar,100,500)}
+   else{box.classList.add('g');fill(bar,(500-x)/5,900);await w(1000);am('Retiro válido. Saldo $'+(500-x))}})}
+ if(t=='I'){sc.innerHTML=`<p>Saldo: <b id="sd">$500</b></p><div class="tx">Cliente 1 retira $400</div><div class="pb"><i id="l1"></i></div><div class="tx">Cliente 2 retira $400</div><div class="pb" id="b2"><i id="l2"></i></div><p class="msg" id="am"></p>`;
+  btn(ct,'Retirar los dos a la vez',async()=>{const on=$('#iso').checked;$('#sd').textContent='$500';$('#b2').className='pb';fill($('#l1'),0);fill($('#l2'),0);am(on?'Con aislamiento: uno a la vez':'Sin aislamiento: los dos leen $500');await w(400);
+   if(!on){fill($('#l1'),100,1500);fill($('#l2'),100,1500);await w(1600);$('#sd').textContent='−$300';$('#b2').classList.add('r');am('Los dos pasaron. Saldo −$300 ✗')}
+   else{fill($('#l1'),100,1400);await w(1500);$('#sd').textContent='$100';am('Cliente 1 terminó. Cliente 2 espera su turno…');await w(800);fill($('#l2'),45,700);await w(900);$('#b2').classList.add('r');am('Cliente 2 ve $100 y se rechaza ✓')}});
+  ct.insertAdjacentHTML('beforeend','<label><input type="checkbox" id="iso" checked> aislamiento</label>')}
+ if(t=='D'){let bal=500;sc.innerHTML=`<div class="scr tx" id="lg">&gt; saldo = $500</div><div class="off" id="of">sin energía</div>`;const ad=x=>$('#lg').textContent+='\n'+x;
+  btn(ct,'Depositar $100',async()=>{bal+=100;ad('> INSERT depósito +100');await w(600);ad('> COMMIT: escrito en disco, saldo $'+bal)});
+  btn(ct,'Cortar luz y reiniciar',async()=>{$('#of').classList.add('on');await w(1500);$('#of').classList.remove('on');ad('> reiniciando…');await w(700);ad('> leyendo el disco… saldo $'+bal+' ✓')},true)}}
+$$('#tabs .ch').forEach(b=>b.onclick=()=>acid(b.dataset.t));acid('A');
+
+// 3. clasificación: dialectos
+let mode='h';
+function cl(m){run++;mode=m;$('#mh').classList.toggle('sel',m=='h');$('#mx').classList.toggle('sel',m=='x');
+ const G=m=='h'?['PostgreSQL','PostgreSQL','PostgreSQL']:['Oracle','MySQL','SQL Server'],col=m=='h'?['var(--am)','var(--am)','var(--am)']:['var(--co)','var(--am)','#5b6777'];
+ $('#cs').innerHTML=`<p class="tx">Pedido: las 3 primeras filas de clientes</p><div class="cd" id="gw">${m=='h'?'Todos hablan el mismo SQL':'Conector (gateway)'}</div><div class="cards" style="margin-top:.5rem">${G.map((g,k)=>`<div class="cd" style="border-color:${col[k]}"><b>${g}</b><div class="tx o" style="min-height:4.5em"></div></div>`).join('')}</div><p class="msg" id="m2"></p>`}
+$('#mh').onclick=()=>cl('h');$('#mx').onclick=()=>cl('x');cl('h');
+$('#bq').onclick=()=>{cl(mode);play(async()=>{const Q=mode=='h'?Array(3).fill('SELECT * FROM clientes LIMIT 3;'):['SELECT * FROM clientes FETCH FIRST 3 ROWS ONLY;','SELECT * FROM clientes LIMIT 3;','SELECT TOP 3 * FROM clientes;'];
+ $('#gw').classList.add('on');$('#m2').textContent=mode=='h'?'Sin traducción: el SQL pasa igual':'El conector traduce el pedido al dialecto de cada gestor';await w(900);
+ const o=$$('#cs .o');await Promise.all(Q.map((q,k)=>ty(o[k],q,22)));$$('#cs .cards .cd').forEach(c=>c.classList.add('hit'));$('#m2').textContent='Los tres devolvieron 3 filas ✓'})};
+
+// 4. consideraciones: carrera de consultas
+const VN=['Esmeraldas','Quito','Cuenca'],dd=[0,0,0];
+$('#vs').innerHTML=`<p class="tx" style="margin:0">Un solo servidor <span id="t0"></span></p><div class="pb r"><i id="p0"></i></div><div class="cards" id="vc">${VN.map(n=>`<div class="cd" style="cursor:pointer"><b>${n}</b><div class="pb"><i></i></div><span class="tx"></span></div>`).join('')}</div><p class="msg" id="av"></p>`;
+const vc=()=>$$('#vc .cd'),av=()=>{const n=3-dd.reduce((a,b)=>a+b);$('#av').innerHTML=`<i class="led ${n?'':'off'}"></i>Servicio ${n?'disponible':'caído'} (${n} de 3 sedes)`};av();
+vc().forEach((c,k)=>c.onclick=()=>{dd[k]^=1;c.classList.toggle('dead',!!dd[k]);av()});
+$('#bv').onclick=()=>play(async()=>{const al=[0,1,2].filter(k=>!dd[k]);fill($('#p0'),0);$('#t0').textContent='';vc().forEach(c=>{fill($('i',c),0);$('span',c).textContent=''});if(!al.length){$('#av').textContent='Todas las sedes están caídas';return}
+ const t=3/al.length;fill($('#p0'),100,3000);al.forEach(k=>fill($('i',vc()[k]),100,t*1000));await w(t*1000+100);al.forEach(k=>{$('span',vc()[k]).textContent=t.toFixed(1)+' s';vc()[k].classList.add('hit')});await w(3100-t*1000);$('#t0').textContent='3.0 s';av()});
+$('#bl').onclick=()=>play(async()=>{const al=[0,1,2].filter(k=>!dd[k]);vc().forEach(c=>{c.classList.remove('hit');$('span',c).textContent=''});$('#av').textContent='';$('#vs').insertAdjacentHTML('afterbegin','<div class="bn">Administrador global: política de respaldo diario</div>');
+ for(const k of al){await w(600);$('span',vc()[k]).textContent='aplicada por su admin local';vc()[k].classList.add('hit')}await w(900);$$('#vs .bn').forEach(x=>x.remove());av()});
+
+// 5. fragmentación
+const C=[['Ana Mora','Quito'],['Luis Vera','Guayaquil'],['Rosa Cabrera','Cuenca'],['Pedro Salas','Quito'],['Eva Ruiz','Guayaquil'],['Tito Lema','Cuenca']],CI=['Quito','Guayaquil','Cuenca'];
+$('#fg').innerHTML=`<div class="cards" id="fz">${CI.map(c=>`<div class="cd" data-c="${c}"><b>${c}</b><br>${C.filter(r=>r[1]==c).map(r=>`<span class="rc">${r[0]}</span>`).join('')}</div>`).join('')}</div><p class="tx" style="margin:.5rem 0 0">Resultado de la consulta:</p><div id="rz" style="min-height:1.8rem"></div><p class="msg" id="fm">Elige una consulta.</p>`;
+$$('.q').forEach(b=>b.onclick=()=>play(async()=>{const q=b.dataset.q;$('#rz').innerHTML='';$$('#fz .rc').forEach(x=>x.classList.remove('hit'));
+ $$('#fz .cd').forEach(c=>{const on=q=='*'||c.dataset.c==q;c.classList.toggle('dead',!on);c.classList.toggle('on',on)});
+ $('#fm').textContent=q=='*'?'SELECT * FROM clientes: se consultan los 3 fragmentos':`WHERE ciudad="${q}": solo se consulta el fragmento de ${q}`;
+ for(const r of C.filter(r=>q=='*'||r[1]==q)){await w(350);$$('#fz .cd').find(c=>c.dataset.c==r[1]).querySelectorAll('.rc').forEach(x=>{if(x.textContent==r[0])x.classList.add('hit')});$('#rz').insertAdjacentHTML('beforeend',`<span class="rc hit">${r[0]}</span>`)}}));
+
+// 6. doce reglas, cada una con su propia animación
+const rs=$('#rs'),H=h=>rs.innerHTML=h+'<p class="msg" id="m"></p>',q=s=>$(s,rs),m=t=>q('#m').textContent=t,cd=(n,x='')=>`<div class="cd">${n}${x}</div>`;
+
+// Red de servidores: enlaces curvos con sombra, paquetes que viajan por el enlace real
+const P=[[62,52],[238,52],[62,138],[238,138]],NM=['Quito','Guayaquil','Cuenca','Loja'],PR=[[0,1],[0,2],[0,3],[1,2],[1,3],[2,3]];
+const seg=(a,b)=>`M${P[a][0]} ${P[a][1]} L${P[b][0]} ${P[b][1]}`;
+const netSVG=()=>`<svg class="netsvg" viewBox="0 0 300 190">
+<defs>
+ <linearGradient id="srvg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ffffff"/><stop offset="1" stop-color="#d7e1ee"/></linearGradient>
+ <filter id="nsh" x="-25%" y="-25%" width="150%" height="170%"><feDropShadow dx="0" dy="3" stdDeviation="3" flood-color="#1b2430" flood-opacity=".22"/></filter>
+ <filter id="glow" x="-100%" y="-100%" width="300%" height="300%"><feGaussianBlur stdDeviation="2.5" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+</defs>
+${PR.map(([a,b])=>`<path id="l${a}${b}" d="${seg(a,b)}" stroke="#b7c3d3" stroke-width="3" stroke-linecap="round" fill="none"/>`).join('')}
+${P.map((p,k)=>`<g id="g${k}" filter="url(#nsh)" style="transition:opacity .5s">
+ <rect x="${p[0]-34}" y="${p[1]-21}" width="68" height="42" rx="7" fill="url(#srvg)" stroke="#1f6fb5" stroke-width="1.5"/>
+ <line x1="${p[0]-26}" y1="${p[1]-9}" x2="${p[0]+16}" y2="${p[1]-9}" stroke="#9fb2c9" stroke-width="1.5"/>
+ <line x1="${p[0]-26}" y1="${p[1]}" x2="${p[0]+16}" y2="${p[1]}" stroke="#9fb2c9" stroke-width="1.5"/>
+ <line x1="${p[0]-26}" y1="${p[1]+9}" x2="${p[0]+16}" y2="${p[1]+9}" stroke="#9fb2c9" stroke-width="1.5"/>
+ <circle class="lp" cx="${p[0]+24}" cy="${p[1]-9}" r="2.8" fill="#2e8b57"/>
+ <circle class="lp" cx="${p[0]+24}" cy="${p[1]}" r="2.8" fill="#2e8b57" style="animation-delay:.5s"/>
+ <text x="${p[0]}" y="${p[1]+35}" text-anchor="middle" font-size="11" fill="#1b2430" font-weight="700">${NM[k]}</text></g>`).join('')}
+<g id="pk"></g></svg>`;
+
+const R=[
+['Autonomía local','Cada sitio maneja sus datos sin depender de otros.',async()=>{H(`<div class="cards">${cd('Quito')}<div class="cd" id="c">Cuenca<br>Depósitos: <b id="n">0</b></div></div><p class="tx">Enlace Quito–Cuenca<i class="led" id="L"></i></p>`);await w(900);q('#L').classList.add('off');q('.cd').classList.add('dead');m('Se cortó el enlace con Quito');for(let k=1;k<=3;k++){await w(700);q('#n').textContent=k;q('#c').classList.add('hit')}m('Cuenca sigue registrando depósitos sola')}],
+['Sin sitio central','Ningún nodo es imprescindible.',async()=>{
+ H(netSVG());
+ const sv=q('svg'),pk=q('#pk');
+ const send=(a,b)=>{const c=document.createElementNS(NS,'circle');c.setAttribute('r',4.5);c.setAttribute('fill','#1f6fb5');c.setAttribute('filter','url(#glow)');pk.appendChild(c);
+  const an=document.createElementNS(NS,'animateMotion');an.setAttribute('dur','.7s');an.setAttribute('path',seg(a,b));an.setAttribute('fill','freeze');an.setAttribute('calcMode','spline');an.setAttribute('keySplines','.4 0 .6 1');an.setAttribute('begin','indefinite');c.appendChild(an);an.beginElement();setTimeout(()=>c.remove(),800)};
+ let al=[0,1,2,3];
+ const pick=()=>{const x=al[Math.floor(Math.random()*al.length)];let y;do{y=al[Math.floor(Math.random()*al.length)]}while(y==x);return[x,y]};
+ for(let i=0;i<10;i++){
+  if(i==4){al=[1,2,3];q('#g0').style.opacity=.35;$$('#g0 .lp',rs).forEach(l=>{l.setAttribute('fill','#d9482b');l.style.animation='none'});
+   ['l01','l02','l03'].forEach(id=>{const l=$('#'+id,rs);l.setAttribute('stroke','#d9482b');l.setAttribute('stroke-dasharray','5 5');l.style.opacity=.55});
+   m('Quito se cayó: los demás siguen')}
+  const[a,b]=pick();send(a,b);
+  if(i%3==0){const[c,d]=pick();setTimeout(()=>send(c,d),250)}
+  await w(480);
+ }
+ m('La red sigue viva sin un sitio central')}],
+['Operación continua','Agregar nodos no obliga a parar el sistema.',async()=>{H(`<p>En línea: <b id="t">0</b> s<i class="led"></i></p><div class="cards" id="cc">${cd('Quito')+cd('Guayaquil')+cd('Cuenca')}</div>`);let t=0;(async()=>{for(;;){await w(1000);q('#t').textContent=++t}})().catch(()=>{});await w(1600);m('Se agrega una agencia en Loja…');q('#cc').insertAdjacentHTML('beforeend','<div class="cd hit new">Loja</div>');await w(2000);m('Loja ya participa y el contador nunca se detuvo')}],
+['Independencia de ubicación','No necesitas saber dónde está el dato.',async()=>{H(`<p class="tx">Buscar: <span id="ty"></span></p><div class="cards" id="cc">${cd('Quito')+cd('Guayaquil')+cd('Cuenca')}</div><div id="res" style="margin-top:.5rem"></div>`);await ty(q('#ty'),'Rosa Cabrera');const c=$$('.cd',q('#cc'));for(let k=0;k<3;k++){c[k].classList.add('on');await w(600);if(k<2)c[k].classList.remove('on')}c[2].classList.add('hit');q('#res').innerHTML='<div class="cd hit">Rosa Cabrera, saldo $820</div>';m('Encontrada. Tú nunca indicaste la ciudad.')}],
+['Independencia de fragmentación','La tabla está partida y se ve completa.',async()=>{H(`<div class="cards" id="cc"><div class="cd">Quito<br>Ana, Pedro</div><div class="cd">Guayaquil<br>Luis, Eva</div><div class="cd">Cuenca<br>Rosa, Tito</div></div><div class="cd hit" id="all" style="opacity:0;margin-top:.5rem">clientes: Ana, Luis, Rosa, Pedro, Eva, Tito</div>`);m('Tres fragmentos en tres sitios…');await w(1000);$$('.cd',q('#cc')).forEach(c=>c.classList.add('go'));await w(800);q('#all').style.opacity=1;m('Para ti son una sola tabla')}],
+['Independencia de réplica','Hay copias y el usuario no las maneja.',async()=>{const D=[['Quito',420],['Guayaquil',5],['Cuenca',210]];H(`<p class="tx">Tú estás en Guayaquil. Tabla: productos</p><div class="cards" id="cc">${D.map(d=>`<div class="cd">${d[0]}<div class="pb"><i></i></div>${d[1]} km</div>`).join('')}</div>`);m('Hay una copia en cada sede');await w(700);$$('.pb i',rs).forEach((i,k)=>fill(i,D[k][1]/4.5,900));await w(1100);$$('.cd',q('#cc'))[1].classList.add('hit');m('Se usa la copia más cercana: Guayaquil')}],
+['Consultas distribuidas','El sistema elige el plan más barato.',async()=>{H(`<div class="cards"><div class="cd" id="pa">Plan A: mover 5000 filas<div class="pb r"><i></i></div></div><div class="cd" id="pc">Plan B: mover 20 filas<div class="pb g"><i></i></div></div></div>`);m('JOIN pedidos (Quito) con clientes (Cuenca)');await w(600);fill(q('#pa i'),100,1800);fill(q('#pc i'),2,1800);await w(2000);q('#pa').classList.add('dead');q('#pc').classList.add('hit');m('Se elige el plan B, el más barato')}],
+['Transacciones distribuidas','ACID aunque participen varios nodos.',async()=>{const pc=async fail=>{H(`<div class="cards" id="cc">${['Quito','Guayaquil','Cuenca'].map(n=>`<div class="cd">${n}<br><small>esperando</small></div>`).join('')}</div><button class="b o" id="rf">${fail?'Repetir sin fallo':'Probar con fallo'}</button>`);q('#rf').onclick=()=>play(()=>pc(!fail));const c=$$('.cd',rs);m('Fase 1: ¿pueden confirmar?');
+ for(let k=0;k<3;k++){await w(700);if(fail&&k==2){c[k].classList.add('bad');$('small',c[k]).textContent='no puede ✗'}else{c[k].classList.add('on');$('small',c[k]).textContent='preparado ✓'}}await w(700);
+ if(fail){m('Fase 2: ROLLBACK en todos');c.forEach(x=>{x.className='cd bad';$('small',x).textContent='deshecho'})}else{m('Fase 2: COMMIT en todos');c.forEach(x=>{x.className='cd hit';$('small',x).textContent='confirmado'})}};await pc(false)}],
+['Independencia del hardware','Los nodos pueden ser de marcas distintas.',async()=>{H(`<div class="cards">${['Dell','HP','Lenovo'].map((n,k)=>`<div class="cd"><span class="fan" style="animation-duration:${[.6,1.1,1.8][k]}s">✻</span><br>${n}<br><small class="o">trabajando…</small></div>`).join('')}</div>`);m('Misma consulta en tres máquinas');const c=$$('.cd',rs);for(const k of[0,1,2]){await w(k?700:900);$('.o',c[k]).textContent='3 filas ✓';c[k].classList.add('hit')}m('Cada una a su ritmo, el resultado es el mismo')}],
+['Independencia del sistema operativo','Cada nodo usa su propio SO.',async()=>{const O=[['Linux','$ '],['Windows','C:\\> '],['macOS','% ']];H(`<div class="cards">${O.map(o=>`<div class="cd"><b>${o[0]}</b><div class="scr tx"></div></div>`).join('')}</div>`);const sc=$$('.scr',rs),cmd='psql -c "SELECT count(*) FROM clientes"';await Promise.all(O.map((o,k)=>ty(sc[k],o[1]+cmd,18)));sc.forEach(x=>x.textContent+='\ncount: 6');m('Mismo comando, mismo resultado en los tres')}],
+['Independencia de la red','No importa cómo se conecten.',async()=>{H(['Fibra','VPN','4G'].map(n=>`<div class="ln2"><span>${n}</span><div class="trk"><i></i></div><b></b></div>`).join(''));m('La misma consulta por tres redes');const D=[500,1300,2400],t=$$('.trk i',rs);await Promise.all(t.map((d,k)=>d.animate([{left:'0'},{left:'calc(100% - 14px)'}],{duration:D[k],fill:'forwards'}).finished.then(()=>{$$('.ln2 b',rs)[k].textContent='respuesta ✓'})));m('Cambia la velocidad, no el resultado')}],
+['Independencia del DBMS','Distintos gestores responden al mismo SQL.',async()=>{H(`<p class="tx" id="qq"></p><div class="cards">${['Oracle','MySQL','PostgreSQL'].map(n=>`<div class="cd"><b>${n}</b><div class="tx o"></div></div>`).join('')}</div>`);await ty(q('#qq'),'SELECT nombre, saldo FROM clientes WHERE id=3;',22);const o=$$('.o',rs);for(const k of[0,1,2]){await w(500);o[k].textContent='Rosa  820';o[k].parentNode.classList.add('hit')}m('Mismo SQL, mismo resultado, distinto gestor')}]];
+function rr(k){$$('#rg .ch').forEach((b,j)=>b.classList.toggle('sel',j==k));$('#rt').innerHTML=`<b>${k+1}. ${R[k][0]}</b>`;$('#rd').textContent=R[k][1];play(async()=>{H('');await w(150);await R[k][2]()})}
+R.forEach((r,k)=>{const b=document.createElement('button');b.className='ch';b.textContent=k+1;b.setAttribute('aria-label',r[0]);b.onclick=()=>rr(k);$('#rg').appendChild(b);$(k<6?'#ra':'#rb').insertAdjacentHTML('beforeend',`<div class="it"><b>${k+1}. ${r[0]}</b> ${r[1]}</div>`)});
+
+go(0);
+</script>
+</body>
+</html>
